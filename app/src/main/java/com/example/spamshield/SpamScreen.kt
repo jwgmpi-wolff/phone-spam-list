@@ -72,6 +72,11 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
+        Text(
+            "Spam and block labels are stored only in SpamShield. They do not change Google Messages, Samsung Messages, or Phone app settings.",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium
+        )
 
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -124,7 +129,7 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Blocked threads", style = MaterialTheme.typography.titleMedium)
+                    Text("Locally tracked blocked threads", style = MaterialTheme.typography.titleMedium)
                     blockedThreads.forEach { blocked ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -132,7 +137,7 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
                         ) {
                             Text("thread ${blocked.threadId}")
                             OutlinedButton(onClick = { viewModel.unblockThread(blocked.threadId) }) {
-                                Text("Unblock")
+                                Text("Remove local block")
                             }
                         }
                     }
@@ -159,27 +164,47 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
                                 "Source: ${record.source} • Thread: ${record.threadId}"
                             }
                         )
+                        val localStatuses = buildList {
+                            if (record.isSpam) add("Spam in SpamShield only")
+                            if (record.isFlagged) add("Flagged in SpamShield only")
+                            if (record.isBlocked) add("Thread tracked as blocked locally only")
+                        }
+                        if (localStatuses.isNotEmpty()) {
+                            Text(
+                                localStatuses.joinToString(" • "),
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                         if (record.tags.isNotEmpty()) {
                             Text("Tags: ${record.tags.joinToString()}")
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { viewModel.toggleSpam(record.id, !record.isSpam) }) {
-                                Text(if (record.isSpam) "Mark safe" else "Mark spam")
+                                Text(if (record.isSpam) "Remove local spam label" else "Mark spam locally")
                             }
                             OutlinedButton(onClick = { viewModel.toggleFlag(record.id, !record.isFlagged) }) {
-                                Text(if (record.isFlagged) "Unflag" else "Flag")
+                                Text(if (record.isFlagged) "Remove local flag" else "Flag locally")
                             }
                             if (record.source == "sms") {
-                                OutlinedButton(onClick = { viewModel.blockThread(record.threadId) }) {
-                                    Text("Block thread")
+                                OutlinedButton(
+                                    onClick = {
+                                        if (record.isBlocked) {
+                                            viewModel.unblockThread(record.threadId)
+                                        } else {
+                                            viewModel.blockThread(record.threadId)
+                                        }
+                                    }
+                                ) {
+                                    Text(if (record.isBlocked) "Remove local thread block" else "Track thread as blocked locally")
                                 }
                                 OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
-                                    Text("Delete thread")
+                                    Text("Delete local thread records")
                                 }
                             } else {
                                 OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
-                                    Text("Delete call record")
+                                    Text("Delete local call record")
                                 }
                             }
                         }
