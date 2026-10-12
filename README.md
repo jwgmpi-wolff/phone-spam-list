@@ -20,7 +20,7 @@ This app does not currently import Google Messages or Samsung Messages exports. 
 
 ## Download
 
-Download the latest debug APK from the [GitHub Releases page](https://github.com/jerrywolff_microsoft/phone-spam-list/releases/latest/download/SpamShield-debug.apk). This repository is private, so GitHub sign-in and repository access are required.
+Download the latest debug APK from the [GitHub Releases page](https://github.com/jerrywolff_microsoft/phone-spam-list/releases/latest/download/app-debug.apk). This repository is private, so GitHub sign-in and repository access are required.
 
 ## Local run
 
