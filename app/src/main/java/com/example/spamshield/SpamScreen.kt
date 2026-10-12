@@ -6,11 +6,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -61,83 +60,98 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "SpamShield",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Spam and block labels are stored only in SpamShield. They do not change Google Messages, Samsung Messages, or Phone app settings.",
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    if (ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.READ_SMS
-                        ) == PackageManager.PERMISSION_GRANTED
-                    ) {
-                        permissionMessage = null
-                        viewModel.importSystemMessages()
-                    } else {
-                        smsPermissionLauncher.launch(Manifest.permission.READ_SMS)
-                    }
-                }
-            ) {
-                Text("Import SMS")
-            }
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    if (ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.READ_CALL_LOG
-                        ) == PackageManager.PERMISSION_GRANTED
-                    ) {
-                        permissionMessage = null
-                        viewModel.importSystemCalls()
-                    } else {
-                        callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
-                    }
-                }
-            ) {
-                Text("Import call history")
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "SpamShield",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Spam and block labels are stored only in SpamShield. They do not change Google Messages, Samsung Messages, or Phone app settings.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
 
-        permissionMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.READ_SMS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            permissionMessage = null
+                            viewModel.importSystemMessages()
+                        } else {
+                            smsPermissionLauncher.launch(Manifest.permission.READ_SMS)
+                        }
+                    }
+                ) {
+                    Text("Import SMS")
+                }
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.READ_CALL_LOG
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            permissionMessage = null
+                            viewModel.importSystemCalls()
+                        } else {
+                            callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
+                        }
+                    }
+                ) {
+                    Text("Import call history")
+                }
+            }
+        }
 
-        Text("Total records: ${messages.size}")
-        Text("Spam: ${spamMessages.size} | Flagged: ${flaggedMessages.size} | Blocked threads: ${blockedThreads.size}")
+        permissionMessage?.let { message ->
+            item {
+                Text(message, color = MaterialTheme.colorScheme.error)
+            }
+        }
+
+        item {
+            Text("Total records: ${messages.size}")
+        }
+        item {
+            Text("Spam: ${spamMessages.size} | Flagged: ${flaggedMessages.size} | Blocked threads: ${blockedThreads.size}")
+        }
 
         if (blockedThreads.isNotEmpty()) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Locally tracked blocked threads", style = MaterialTheme.typography.titleMedium)
-                    blockedThreads.forEach { blocked ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("thread ${blocked.threadId}")
-                            OutlinedButton(onClick = { viewModel.unblockThread(blocked.threadId) }) {
-                                Text("Remove local block")
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Locally tracked blocked threads", style = MaterialTheme.typography.titleMedium)
+                        blockedThreads.forEach { blocked ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("thread ${blocked.threadId}")
+                                OutlinedButton(onClick = { viewModel.unblockThread(blocked.threadId) }) {
+                                    Text("Remove local block")
+                                }
                             }
                         }
                     }
@@ -145,67 +159,66 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        item {
+            Text("Messages and call history", style = MaterialTheme.typography.titleLarge)
+        }
 
-        Text("Messages", style = MaterialTheme.typography.titleLarge)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(messages) { record ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(record.sender, fontWeight = FontWeight.Bold)
-                        Text(record.body.ifBlank { "(empty message)" })
+        items(messages, key = { "${it.source}:${it.id}" }) { record ->
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(record.sender, fontWeight = FontWeight.Bold)
+                    Text(record.body.ifBlank { "(empty message)" })
+                    Text(
+                        if (record.source == "call") {
+                            "Call history • ${java.text.DateFormat.getDateTimeInstance().format(record.timestamp)}"
+                        } else {
+                            "Source: ${record.source} • Thread: ${record.threadId}"
+                        }
+                    )
+                    val localStatuses = buildList {
+                        if (record.isSpam) add("Spam in SpamShield only")
+                        if (record.isFlagged) add("Flagged in SpamShield only")
+                        if (record.isBlocked) add("Thread tracked as blocked locally only")
+                    }
+                    if (localStatuses.isNotEmpty()) {
                         Text(
-                            if (record.source == "call") {
-                                "Call history • ${java.text.DateFormat.getDateTimeInstance().format(record.timestamp)}"
-                            } else {
-                                "Source: ${record.source} • Thread: ${record.threadId}"
-                            }
+                            localStatuses.joinToString(" • "),
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold
                         )
-                        val localStatuses = buildList {
-                            if (record.isSpam) add("Spam in SpamShield only")
-                            if (record.isFlagged) add("Flagged in SpamShield only")
-                            if (record.isBlocked) add("Thread tracked as blocked locally only")
-                        }
-                        if (localStatuses.isNotEmpty()) {
-                            Text(
-                                localStatuses.joinToString(" • "),
-                                color = MaterialTheme.colorScheme.error,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        if (record.tags.isNotEmpty()) {
-                            Text("Tags: ${record.tags.joinToString()}")
-                        }
+                    }
+                    if (record.tags.isNotEmpty()) {
+                        Text("Tags: ${record.tags.joinToString()}")
+                    }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { viewModel.toggleSpam(record.id, !record.isSpam) }) {
-                                Text(if (record.isSpam) "Remove local spam label" else "Mark spam locally")
-                            }
-                            OutlinedButton(onClick = { viewModel.toggleFlag(record.id, !record.isFlagged) }) {
-                                Text(if (record.isFlagged) "Remove local flag" else "Flag locally")
-                            }
-                            if (record.source == "sms") {
-                                OutlinedButton(
-                                    onClick = {
-                                        if (record.isBlocked) {
-                                            viewModel.unblockThread(record.threadId)
-                                        } else {
-                                            viewModel.blockThread(record.threadId)
-                                        }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { viewModel.toggleSpam(record.id, !record.isSpam) }) {
+                            Text(if (record.isSpam) "Remove local spam label" else "Mark spam locally")
+                        }
+                        OutlinedButton(onClick = { viewModel.toggleFlag(record.id, !record.isFlagged) }) {
+                            Text(if (record.isFlagged) "Remove local flag" else "Flag locally")
+                        }
+                        if (record.source == "sms") {
+                            OutlinedButton(
+                                onClick = {
+                                    if (record.isBlocked) {
+                                        viewModel.unblockThread(record.threadId)
+                                    } else {
+                                        viewModel.blockThread(record.threadId)
                                     }
-                                ) {
-                                    Text(if (record.isBlocked) "Remove local thread block" else "Track thread as blocked locally")
                                 }
-                                OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
-                                    Text("Delete local thread records")
-                                }
-                            } else {
-                                OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
-                                    Text("Delete local call record")
-                                }
+                            ) {
+                                Text(if (record.isBlocked) "Remove local thread block" else "Track thread as blocked locally")
+                            }
+                            OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
+                                Text("Delete local thread records")
+                            }
+                        } else {
+                            OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
+                                Text("Delete local call record")
                             }
                         }
                     }
