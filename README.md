@@ -20,9 +20,12 @@ This app does not currently import Google Messages or Samsung Messages exports. 
 
 ## Download
 
-### [Download the SpamShield Android APK](https://github.com/jwgmpi-wolff/phone-spam-list/releases/download/v1.0.0/app-debug.apk)
+### Download the SpamShield Android APK
 
-Or open the [v1.0.0 release page](https://github.com/jwgmpi-wolff/phone-spam-list/releases/tag/v1.0.0) and download **app-debug.apk** under Assets. The repository and release are private, so GitHub sign-in and repository access are required.
+- [Download from `jwgmpi-wolff/phone-spam-list`](https://github.com/jwgmpi-wolff/phone-spam-list/releases/download/v1.0.0/app-debug.apk)
+- [Download from `jerrywolff_microsoft/phone-spam-list`](https://github.com/jerrywolff_microsoft/phone-spam-list/releases/download/v1.0.0/app-debug.apk)
+
+Each APK is also available as **app-debug.apk** under Assets on its [v1.0.0 release page](https://github.com/jwgmpi-wolff/phone-spam-list/releases/tag/v1.0.0) or [the other v1.0.0 release page](https://github.com/jerrywolff_microsoft/phone-spam-list/releases/tag/v1.0.0). Both repositories and releases are private, so GitHub sign-in and repository access are required.
 
 ## Local run
 
