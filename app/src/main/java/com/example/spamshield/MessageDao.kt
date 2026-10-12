@@ -19,6 +19,9 @@ interface MessageDao {
     @Query("SELECT * FROM messages ORDER BY timestamp DESC")
     fun getAllMessages(): Flow<List<MessageRecord>>
 
+    @Query("SELECT * FROM messages WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): MessageRecord?
+
     @Query("SELECT * FROM messages WHERE isSpam = 1 ORDER BY timestamp DESC")
     fun getSpamMessages(): Flow<List<MessageRecord>>
 

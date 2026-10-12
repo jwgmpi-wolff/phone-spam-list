@@ -1,5 +1,9 @@
 package com.example.spamshield
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,9 +23,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 
 @Composable
 fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
@@ -29,6 +38,28 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
     val spamMessages by viewModel.spamMessages.collectAsState()
     val flaggedMessages by viewModel.flaggedMessages.collectAsState()
     val blockedThreads by viewModel.blockedThreads.collectAsState()
+    val context = LocalContext.current
+    var permissionMessage by remember { mutableStateOf<String?>(null) }
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            permissionMessage = null
+            viewModel.importSystemMessages()
+        } else {
+            permissionMessage = "SMS permission was denied. Allow it in Android settings to import messages."
+        }
+    }
+    val callLogPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            permissionMessage = null
+            viewModel.importSystemCalls()
+        } else {
+            permissionMessage = "Call-log permission was denied. Allow it in Android settings to import call history."
+        }
+    }
 
     Column(
         modifier = modifier
@@ -42,16 +73,49 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
             fontWeight = FontWeight.Bold
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { viewModel.importSystemMessages() }) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.READ_SMS
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        permissionMessage = null
+                        viewModel.importSystemMessages()
+                    } else {
+                        smsPermissionLauncher.launch(Manifest.permission.READ_SMS)
+                    }
+                }
+            ) {
                 Text("Import SMS")
             }
-            OutlinedButton(onClick = { /* refresh occurs via flow */ }) {
-                Text("Refresh")
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.READ_CALL_LOG
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        permissionMessage = null
+                        viewModel.importSystemCalls()
+                    } else {
+                        callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
+                    }
+                }
+            ) {
+                Text("Import call history")
             }
         }
 
-        Text("Total messages: ${messages.size}")
+        permissionMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+
+        Text("Total records: ${messages.size}")
         Text("Spam: ${spamMessages.size} | Flagged: ${flaggedMessages.size} | Blocked threads: ${blockedThreads.size}")
 
         if (blockedThreads.isNotEmpty()) {
@@ -88,7 +152,13 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
                     ) {
                         Text(record.sender, fontWeight = FontWeight.Bold)
                         Text(record.body.ifBlank { "(empty message)" })
-                        Text("Source: ${record.source} • Thread: ${record.threadId}")
+                        Text(
+                            if (record.source == "call") {
+                                "Call history • ${java.text.DateFormat.getDateTimeInstance().format(record.timestamp)}"
+                            } else {
+                                "Source: ${record.source} • Thread: ${record.threadId}"
+                            }
+                        )
                         if (record.tags.isNotEmpty()) {
                             Text("Tags: ${record.tags.joinToString()}")
                         }
@@ -100,11 +170,17 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
                             OutlinedButton(onClick = { viewModel.toggleFlag(record.id, !record.isFlagged) }) {
                                 Text(if (record.isFlagged) "Unflag" else "Flag")
                             }
-                            OutlinedButton(onClick = { viewModel.blockThread(record.threadId) }) {
-                                Text("Block thread")
-                            }
-                            OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
-                                Text("Delete")
+                            if (record.source == "sms") {
+                                OutlinedButton(onClick = { viewModel.blockThread(record.threadId) }) {
+                                    Text("Block thread")
+                                }
+                                OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
+                                    Text("Delete thread")
+                                }
+                            } else {
+                                OutlinedButton(onClick = { viewModel.deleteThread(record.threadId) }) {
+                                    Text("Delete call record")
+                                }
                             }
                         }
                     }

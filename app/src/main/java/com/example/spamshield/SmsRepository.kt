@@ -2,9 +2,8 @@ package com.example.spamshield
 
 import android.content.Context
 import android.database.Cursor
-import android.net.Uri
+import android.provider.CallLog
 import android.provider.Telephony
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -35,7 +34,6 @@ class SmsRepository(
             )
 
             cursor?.use {
-                val idIndex = it.getColumnIndexOrThrow(Telephony.Sms._ID)
                 val threadIdIndex = it.getColumnIndexOrThrow(Telephony.Sms.THREAD_ID)
                 val addressIndex = it.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
                 val bodyIndex = it.getColumnIndexOrThrow(Telephony.Sms.BODY)
@@ -63,9 +61,81 @@ class SmsRepository(
         return records
     }
 
+    suspend fun importCallHistory(): List<MessageRecord> = withContext(Dispatchers.IO) {
+        val projection = arrayOf(
+            CallLog.Calls._ID,
+            CallLog.Calls.NUMBER,
+            CallLog.Calls.DATE,
+            CallLog.Calls.DURATION,
+            CallLog.Calls.TYPE,
+            CallLog.Calls.CACHED_NAME
+        )
+        val records = mutableListOf<MessageRecord>()
+        val cursor = appContext.contentResolver.query(
+            CallLog.Calls.CONTENT_URI,
+            projection,
+            null,
+            null,
+            "${CallLog.Calls.DATE} DESC"
+        )
+
+        cursor?.use {
+            val idIndex = it.getColumnIndexOrThrow(CallLog.Calls._ID)
+            val numberIndex = it.getColumnIndexOrThrow(CallLog.Calls.NUMBER)
+            val dateIndex = it.getColumnIndexOrThrow(CallLog.Calls.DATE)
+            val durationIndex = it.getColumnIndexOrThrow(CallLog.Calls.DURATION)
+            val typeIndex = it.getColumnIndexOrThrow(CallLog.Calls.TYPE)
+            val nameIndex = it.getColumnIndexOrThrow(CallLog.Calls.CACHED_NAME)
+
+            while (it.moveToNext()) {
+                val callLogId = it.getLong(idIndex)
+                val number = it.getString(numberIndex).orEmpty().ifBlank { "Unknown number" }
+                val contactName = it.getString(nameIndex).orEmpty()
+                val durationSeconds = it.getLong(durationIndex)
+                val callType = it.getInt(typeIndex)
+                val callDescription = when (callType) {
+                    CallLog.Calls.INCOMING_TYPE -> "Incoming call"
+                    CallLog.Calls.OUTGOING_TYPE -> "Outgoing call"
+                    CallLog.Calls.MISSED_TYPE -> "Missed call"
+                    CallLog.Calls.REJECTED_TYPE -> "Rejected call"
+                    CallLog.Calls.BLOCKED_TYPE -> "Blocked call"
+                    CallLog.Calls.VOICEMAIL_TYPE -> "Voicemail"
+                    else -> "Call"
+                }
+                val duration = "%d:%02d".format(durationSeconds / 60, durationSeconds % 60)
+                records.add(
+                    MessageRecord(
+                        id = -callLogId,
+                        threadId = -callLogId,
+                        sender = contactName.ifBlank { number },
+                        body = "$number • $callDescription • $duration",
+                        timestamp = it.getLong(dateIndex),
+                        source = "call",
+                        appPackage = "android.call_log"
+                    )
+                )
+            }
+        }
+
+        records
+    }
+
     suspend fun saveImportedMessages(messages: List<MessageRecord>) {
         if (messages.isEmpty()) return
-        db.messageDao().insertAll(messages)
+        val recordsToSave = messages.map { incoming ->
+            if (incoming.source != "call") {
+                incoming
+            } else {
+                db.messageDao().getById(incoming.id)?.let { existing ->
+                    incoming.copy(
+                        isSpam = existing.isSpam,
+                        isFlagged = existing.isFlagged,
+                        isBlocked = existing.isBlocked
+                    )
+                } ?: incoming
+            }
+        }
+        db.messageDao().insertAll(recordsToSave)
     }
 
     suspend fun toggleSpam(id: Long, value: Boolean) {

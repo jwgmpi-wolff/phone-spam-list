@@ -49,6 +49,12 @@ class SpamViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun importSystemCalls() {
+        viewModelScope.launch {
+            repository.importCallHistory().let { repository.saveImportedMessages(it) }
+        }
+    }
+
     fun toggleSpam(id: Long, isSpam: Boolean) {
         viewModelScope.launch {
             repository.toggleSpam(id, isSpam)
