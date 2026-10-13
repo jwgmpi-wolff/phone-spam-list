@@ -11,6 +11,9 @@ SpamShield is a Kotlin + Jetpack Compose Android app for collecting message reco
 - Lets the user flag or unflag messages, mark threads as blocked in the app, and delete a thread's local records.
 - Lets the user flag call records, mark them as spam, or delete them from the local database.
 - Lets the user delete all spam-marked records from SpamShield after confirmation.
+- Provides a message composer that hands text to the installed SMS app and shares a picked image or video with a compatible messaging app for MMS review and sending.
+
+SpamShield does not send messages directly or request the default SMS-app role. For text, Android opens an SMS app with the recipient and message filled in. For media, Android opens a compatible sharing target; recipient prefill and MMS support depend on the selected messaging app. The user reviews and sends the message in that app. Carrier MMS availability and charges may apply.
 
 Spam, flag, and blocked-thread labels are local SpamShield annotations. They do not set spam status in Google Messages or Samsung Messages, block a number in Android Phone, or delete the original system conversation/call log. Individual and bulk deletion remove only the copies stored in SpamShield.
 
@@ -18,10 +21,11 @@ Spam, flag, and blocked-thread labels are local SpamShield annotations. They do 
 
 Direct reads of Google Messages or Samsung Messages databases are not generally available to normal Android apps. Those apps store data in app-private storage or OS-managed containers and do not expose a supported public API for third-party apps to read message content. This app therefore handles:
 
-- default SMS/MMS support via Android's ContentResolver API, and
+- reading SMS/MMS records through Android's provider when the required access is granted, and
 - user-provided export/import data for Google Messages or Samsung Messages records.
 
 This app does not currently import Google Messages or Samsung Messages exports. Any such import requires a supported export format and a dedicated import flow.
+SpamShield is not currently a default SMS app and does not receive messages itself. The composer opens another installed messaging app to complete sending; default-app takeover and direct in-app SMS/MMS delivery are not implemented.
 
 ## Download
 
@@ -42,12 +46,10 @@ Once the Android SDK is installed and `local.properties` is generated, run:
 
 ## Permissions
 
-The app requests:
+The app declares or requests access as needed for:
 
 - `READ_SMS`
-- `RECEIVE_SMS`
-- `SEND_SMS`
 - `READ_CALL_LOG` (requested when importing call history)
 - `READ_EXTERNAL_STORAGE` (Android 12 and lower)
 
-Call-log and SMS permissions expose sensitive personal data. The app requests the corresponding permission only when the user starts that import. Call-log permissions are subject to Google Play policy requirements. This is intended for local review and data collection on a device the user controls.
+Call-log and SMS permissions expose sensitive personal data. The app requests the corresponding permission only when the user starts that import. The message composer hands off to an installed messaging app and does not request direct SMS-send permission. Call-log permissions are subject to Google Play policy requirements. This is intended for local review and data collection on a device the user controls.

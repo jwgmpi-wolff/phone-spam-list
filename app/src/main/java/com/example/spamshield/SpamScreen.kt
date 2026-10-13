@@ -1,8 +1,12 @@
 package com.example.spamshield
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,6 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -41,6 +46,15 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var permissionMessage by remember { mutableStateOf<String?>(null) }
     var showDeleteSpamConfirmation by remember { mutableStateOf(false) }
+    var recipient by remember { mutableStateOf("") }
+    var messageText by remember { mutableStateOf("") }
+    var attachmentUri by remember { mutableStateOf<Uri?>(null) }
+    var sendMessage by remember { mutableStateOf<String?>(null) }
+    val attachmentPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        attachmentUri = uri
+    }
     val smsPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -103,10 +117,94 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
+                    "Compose a message, then review and send it in your messaging app. " +
+                        "Image and video MMS availability depends on your messaging app, carrier, and plan."
+                )
+                Text(
                     "Spam and block labels are stored only in SpamShield. They do not change Google Messages, Samsung Messages, or Phone app settings.",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium
                 )
+            }
+        }
+
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("New message", style = MaterialTheme.typography.titleLarge)
+                    OutlinedTextField(
+                        value = recipient,
+                        onValueChange = { recipient = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Recipient phone number") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = messageText,
+                        onValueChange = { messageText = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Message") }
+                    )
+                    attachmentUri?.let { uri ->
+                        Text(
+                            "Attachment: ${context.contentResolver.getType(uri) ?: "media"}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        OutlinedButton(onClick = { attachmentUri = null }) {
+                            Text("Remove attachment")
+                        }
+                    }
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            attachmentPicker.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageAndVideo
+                                )
+                            )
+                        }
+                    ) {
+                        Text("Attach image or video")
+                    }
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = recipient.isNotBlank() &&
+                            (messageText.isNotBlank() || attachmentUri != null),
+                        onClick = {
+                            try {
+                                val intent = if (attachmentUri == null) {
+                                    Intent(
+                                        Intent.ACTION_SENDTO,
+                                        Uri.parse("smsto:${Uri.encode(recipient.trim())}")
+                                    ).putExtra("sms_body", messageText)
+                                } else {
+                                    Intent(Intent.ACTION_SEND).apply {
+                                        type = context.contentResolver.getType(attachmentUri!!) ?: "*/*"
+                                        putExtra(Intent.EXTRA_STREAM, attachmentUri)
+                                        putExtra(Intent.EXTRA_TEXT, messageText)
+                                        putExtra(Intent.EXTRA_PHONE_NUMBER, recipient.trim())
+                                        clipData = android.content.ClipData.newUri(
+                                            context.contentResolver,
+                                            "message attachment",
+                                            attachmentUri
+                                        )
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Send message"))
+                                sendMessage = "Messaging app opened. Review the message and tap Send there."
+                            } catch (_: ActivityNotFoundException) {
+                                sendMessage = "No compatible messaging app was found."
+                            }
+                        }
+                    ) {
+                        Text(if (attachmentUri == null) "Continue to send SMS" else "Continue to send MMS")
+                    }
+                    sendMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+                }
             }
         }
 
