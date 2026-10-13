@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
     val blockedThreads by viewModel.blockedThreads.collectAsState()
     val context = LocalContext.current
     var permissionMessage by remember { mutableStateOf<String?>(null) }
+    var showDeleteSpamConfirmation by remember { mutableStateOf(false) }
     val smsPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -58,6 +60,34 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
         } else {
             permissionMessage = "Call-log permission was denied. Allow it in Android settings to import call history."
         }
+    }
+
+    if (showDeleteSpamConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteSpamConfirmation = false },
+            title = { Text("Delete all spam-marked records?") },
+            text = {
+                Text(
+                    "This will permanently remove ${spamMessages.size} spam-marked record(s) from SpamShield. " +
+                        "It will not delete the original SMS from Google Messages or Samsung Messages."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteAllSpamMessages()
+                        showDeleteSpamConfirmation = false
+                    }
+                ) {
+                    Text("Delete local records")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteSpamConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     LazyColumn(
@@ -133,6 +163,16 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
         }
         item {
             Text("Spam: ${spamMessages.size} | Flagged: ${flaggedMessages.size} | Blocked threads: ${blockedThreads.size}")
+        }
+        if (spamMessages.isNotEmpty()) {
+            item {
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { showDeleteSpamConfirmation = true }
+                ) {
+                    Text("Delete all locally spam-marked records (${spamMessages.size})")
+                }
+            }
         }
 
         if (blockedThreads.isNotEmpty()) {

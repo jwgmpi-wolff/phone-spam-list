@@ -10,8 +10,9 @@ SpamShield is a Kotlin + Jetpack Compose Android app for collecting message reco
 - Lets the user mark a message as spam or not spam.
 - Lets the user flag or unflag messages, mark threads as blocked in the app, and delete a thread's local records.
 - Lets the user flag call records, mark them as spam, or delete them from the local database.
+- Lets the user delete all spam-marked records from SpamShield after confirmation.
 
-Spam, flag, and blocked-thread labels are local SpamShield annotations. They do not set spam status in Google Messages or Samsung Messages, block a number in Android Phone, or delete the original system conversation/call log. Deletion removes only the copy stored in SpamShield.
+Spam, flag, and blocked-thread labels are local SpamShield annotations. They do not set spam status in Google Messages or Samsung Messages, block a number in Android Phone, or delete the original system conversation/call log. Individual and bulk deletion remove only the copies stored in SpamShield.
 
 ## Important Android restriction
 

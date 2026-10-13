@@ -61,6 +61,12 @@ class SpamViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteAllSpamMessages() {
+        viewModelScope.launch {
+            database.messageDao().deleteAllSpamMessages()
+        }
+    }
+
     fun toggleFlag(id: Long, isFlagged: Boolean) {
         viewModelScope.launch {
             repository.toggleFlag(id, isFlagged)

@@ -49,6 +49,9 @@ interface MessageDao {
     @Query("DELETE FROM messages WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM messages WHERE isSpam = 1")
+    suspend fun deleteAllSpamMessages(): Int
+
     @Query("DELETE FROM messages")
     suspend fun deleteAll()
 }
