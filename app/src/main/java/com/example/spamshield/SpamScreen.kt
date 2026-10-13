@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -31,11 +33,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.launch
 
 @Composable
 fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
@@ -44,6 +50,8 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
     val flaggedMessages by viewModel.flaggedMessages.collectAsState()
     val blockedThreads by viewModel.blockedThreads.collectAsState()
     val context = LocalContext.current
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     var permissionMessage by remember { mutableStateOf<String?>(null) }
     var showDeleteSpamConfirmation by remember { mutableStateOf(false) }
     var recipient by remember { mutableStateOf("") }
@@ -104,11 +112,13 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
         )
     }
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 112.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -361,6 +371,46 @@ fun SpamScreen(viewModel: SpamViewModel, modifier: Modifier = Modifier) {
                         }
                     }
                 }
+            }
+        }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            FilledTonalButton(
+                onClick = {
+                    coroutineScope.launch { listState.animateScrollToItem(0) }
+                }
+            ) {
+                Text("Top")
+            }
+            FilledTonalButton(
+                enabled = listState.firstVisibleItemIndex > 0 ||
+                    listState.firstVisibleItemScrollOffset > 0,
+                onClick = {
+                    val pageSize = listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
+                    val previousPage = (listState.firstVisibleItemIndex - pageSize).coerceAtLeast(0)
+                    coroutineScope.launch { listState.animateScrollToItem(previousPage) }
+                }
+            ) {
+                Text("Page up")
+            }
+            FilledTonalButton(
+                enabled = listState.layoutInfo.totalItemsCount > 0 &&
+                    listState.firstVisibleItemIndex < listState.layoutInfo.totalItemsCount - 1,
+                onClick = {
+                    val pageSize = listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
+                    val nextPage = (listState.firstVisibleItemIndex + pageSize)
+                        .coerceAtMost((listState.layoutInfo.totalItemsCount - 1).coerceAtLeast(0))
+                    coroutineScope.launch { listState.animateScrollToItem(nextPage) }
+                }
+            ) {
+                Text("Page down")
             }
         }
     }

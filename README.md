@@ -11,6 +11,7 @@ SpamShield is a Kotlin + Jetpack Compose Android app for collecting message reco
 - Lets the user flag or unflag messages, mark threads as blocked in the app, and delete a thread's local records.
 - Lets the user flag call records, mark them as spam, or delete them from the local database.
 - Lets the user delete all spam-marked records from SpamShield after confirmation.
+- Provides always-available Top, Page up, and Page down controls for navigating long record lists.
 - Provides a message composer that hands text to the installed SMS app and shares a picked image or video with a compatible messaging app for MMS review and sending.
 
 SpamShield does not send messages directly or request the default SMS-app role. For text, Android opens an SMS app with the recipient and message filled in. For media, Android opens a compatible sharing target; recipient prefill and MMS support depend on the selected messaging app. The user reviews and sends the message in that app. Carrier MMS availability and charges may apply.
