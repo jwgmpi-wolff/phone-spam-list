@@ -2,6 +2,18 @@
 
 SpamShield is a Kotlin + Jetpack Compose Android app for collecting message records into a local Room database, marking spam candidates, flagging or unflagging them, and maintaining a list of blocked or deleted threads.
 
+<!-- project-downloads:start -->
+## APK and installer downloads
+
+| Package | Download | Source |
+| --- | --- | --- |
+| Android APK (debug build) | [app-debug.apk](https://github.com/jwgmpi-wolff/phone-spam-list/releases/download/v1.6.0/app-debug.apk) | v1.6.0 |
+
+Android may require approval to install apps from this download source. Debug APKs are labeled above. Windows executables that are not setup packages may require accompanying project files; follow the project-specific instructions below.
+
+- [Download the complete source ZIP](https://github.com/jwgmpi-wolff/phone-spam-list/archive/refs/heads/main.zip).
+<!-- project-downloads:end -->
+
 ## What it does
 
 - Reads messages from Android's default SMS/MMS provider when the app is granted the SMS-related permissions.
@@ -54,3 +66,9 @@ The app declares or requests access as needed for:
 - `READ_EXTERNAL_STORAGE` (Android 12 and lower)
 
 Call-log and SMS permissions expose sensitive personal data. The app requests the corresponding permission only when the user starts that import. The message composer hands off to an installed messaging app and does not request direct SMS-send permission. Call-log permissions are subject to Google Play policy requirements. This is intended for local review and data collection on a device the user controls.
+
+## Copyright
+
+Copyright (c) 2026 Jerry Wolff. See [COPYRIGHT](COPYRIGHT) for the scope of this
+notice. Existing licenses and third-party attribution remain unchanged; this
+notice does not grant additional permissions.
